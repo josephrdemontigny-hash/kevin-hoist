@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#6b1a2a" />
+  <title>Kevin Ly's Hoist — Ly Lift</title>
+  <style>
+    :root {
+      --bg: #6b1a2a;
+      --bg2: #3d0f18;
+      --accent: #ffcc00;
+      --raise: #e63946;
+      --raise-dark: #b01e2b;
+      --good: #2ecc71;
+      --foam: #fff8f0;
+      --text: #fff8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(ellipse at 50% 20%, #8b2436 0%, var(--bg) 45%, var(--bg2) 100%);
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100%;
+      padding: 10px;
+      touch-action: none;
+    }
+
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+    .screen.active { display: flex; }
+
+    h1 {
+      font-size: clamp(1.85rem, 8vw, 2.6rem);
+      line-height: 1.1;
+      text-shadow: 3px 3px 0 #1a0508, 0 0 24px rgba(255,204,0,0.35);
+      margin-bottom: 4px;
+    }
+    h1 span { color: var(--accent); }
+
+    .tag {
+      font-size: 0.95rem;
+      opacity: 0.9;
+      margin-bottom: 14px;
+      letter-spacing: 0.04em;
+    }
+
+    .kevin-hero {
+      width: min(58vw, 220px);
+      height: min(58vw, 220px);
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: center 18%;
+      border: 4px solid var(--accent);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+      margin: 6px 0 14px;
+      background: #222;
+    }
+
+    .blurb {
+      background: rgba(0,0,0,0.28);
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-size: 0.98rem;
+      line-height: 1.4;
+      margin-bottom: 22px;
+      max-width: 340px;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: 0.06em;
+      padding: 16px 36px;
+      border-radius: 999px;
+      color: #1a0508;
+      background: linear-gradient(180deg, #ffe566, var(--accent));
+      box-shadow: 0 6px 0 #b8860b, 0 10px 24px rgba(0,0,0,0.35);
+      transition: transform 0.08s, box-shadow 0.08s;
+    }
+    .btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #b8860b, 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    /* —— Play —— */
+    #hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 10px;
+    }
+    .stat {
+      background: rgba(0,0,0,0.35);
+      border-radius: 12px;
+      padding: 8px 14px;
+      min-width: 100px;
+    }
+    .stat .label { font-size: 0.7rem; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.08em; }
+    .stat .value { font-size: 1.45rem; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+    .kevin-chip {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: center 20%;
+      border: 2px solid var(--accent);
+      flex-shrink: 0;
+    }
+
+    #stage {
+      position: relative;
+      width: 100%;
+      height: min(52vh, 360px);
+      background: linear-gradient(180deg, #4a121c 0%, #2a0a10 100%);
+      border-radius: 18px;
+      overflow: hidden;
+      border: 3px solid rgba(255,204,0,0.35);
+      box-shadow: inset 0 -40px 60px rgba(0,0,0,0.35);
+      margin-bottom: 14px;
+    }
+
+    .floor {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 18%;
+      background: linear-gradient(180deg, #3a3a3a, #1c1c1c);
+      border-top: 3px solid #555;
+    }
+    .floor::after {
+      content: "";
+      position: absolute;
+      left: 8%; right: 8%; bottom: 35%;
+      height: 4px;
+      background: repeating-linear-gradient(90deg, #ffcc00 0 18px, transparent 18px 30px);
+      opacity: 0.5;
+    }
+
+    .post {
+      position: absolute;
+      top: 4%;
+      bottom: 16%;
+      width: 18px;
+      background: linear-gradient(90deg, #c41e2a, #e63946 40%, #9b1520);
+      border-radius: 4px;
+      box-shadow: 2px 0 6px rgba(0,0,0,0.4);
+      z-index: 2;
+    }
+    .post.left { left: 10%; }
+    .post.right { right: 10%; }
+    .post::before {
+      content: "";
+      position: absolute;
+      top: -6px; left: -6px; right: -6px;
+      height: 14px;
+      background: #222;
+      border-radius: 3px;
+    }
+    .crossbeam {
+      position: absolute;
+      top: 4%;
+      left: 10%;
+      right: 10%;
+      height: 10px;
+      background: #1a1a1a;
+      z-index: 1;
+    }
+
+    .lift-arms {
+      position: absolute;
+      left: 14%;
+      right: 14%;
+      height: 10px;
+      bottom: 22%;
+      z-index: 3;
+      transition: bottom 0.05s linear;
+    }
+    .lift-arms::before,
+    .lift-arms::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      width: 42%;
+      height: 10px;
+      background: linear-gradient(180deg, #ffe066, #e6b800);
+      border-radius: 3px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    }
+    .lift-arms::before { left: 0; }
+    .lift-arms::after { right: 0; }
+
+    #car-wrap {
+      position: absolute;
+      left: 50%;
+      width: 78%;
+      max-width: 320px;
+      transform: translateX(-50%);
+      bottom: 24%;
+      z-index: 4;
+      transform-origin: 50% 80%;
+      transition: bottom 0.05s linear;
+      will-change: transform, bottom;
+    }
+    #car-wrap img {
+      width: 100%;
+      display: block;
+      filter: drop-shadow(0 8px 12px rgba(0,0,0,0.5));
+      pointer-events: none;
+    }
+
+    #car-wrap.wobble-1 { animation: wob1 0.45s ease-in-out infinite; }
+    #car-wrap.wobble-2 { animation: wob2 0.28s ease-in-out infinite; }
+    #car-wrap.wobble-3 { animation: wob3 0.16s ease-in-out infinite; }
+    #car-wrap.falling {
+      animation: none !important;
+      transition: bottom 0.55s cubic-bezier(0.55, 0.05, 0.9, 0.4),
+                  transform 0.55s cubic-bezier(0.55, 0.05, 0.9, 0.4);
+    }
+
+    @keyframes wob1 {
+      0%,100% { transform: translateX(-50%) rotate(-1.2deg); }
+      50% { transform: translateX(-50%) rotate(1.2deg); }
+    }
+    @keyframes wob2 {
+      0%,100% { transform: translateX(-50%) rotate(-2.8deg) translateY(0); }
+      50% { transform: translateX(-50%) rotate(2.8deg) translateY(-2px); }
+    }
+    @keyframes wob3 {
+      0%,100% { transform: translateX(-50%) rotate(-5deg) translateY(0); }
+      33% { transform: translateX(calc(-50% + 3px)) rotate(4deg) translateY(-3px); }
+      66% { transform: translateX(calc(-50% - 3px)) rotate(-3deg) translateY(1px); }
+    }
+
+    #boom {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      pointer-events: none;
+      background: radial-gradient(circle, rgba(255,120,0,0.35), transparent 60%);
+    }
+    #boom.show { display: flex; animation: flash 0.4s ease-out; }
+    #boom .smoke {
+      font-size: 4rem;
+      animation: smokeUp 0.9s ease-out forwards;
+    }
+    #boom .wrecked {
+      position: absolute;
+      font-size: clamp(2rem, 10vw, 3rem);
+      font-weight: 900;
+      color: #ffcc00;
+      text-shadow: 3px 3px 0 #000, 0 0 20px #ff4400;
+      letter-spacing: 0.08em;
+      animation: wreckPop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+    }
+    @keyframes flash {
+      0% { background: rgba(255,255,255,0.7); }
+      100% { background: radial-gradient(circle, rgba(255,80,0,0.4), transparent 65%); }
+    }
+    @keyframes smokeUp {
+      0% { opacity: 1; transform: scale(0.6) translateY(20px); }
+      100% { opacity: 0.3; transform: scale(1.4) translateY(-40px); }
+    }
+    @keyframes wreckPop {
+      0% { transform: scale(0.2) rotate(-8deg); opacity: 0; }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+
+    .danger-bar {
+      position: absolute;
+      right: 8px;
+      top: 10%;
+      bottom: 20%;
+      width: 10px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 6px;
+      overflow: hidden;
+      z-index: 5;
+    }
+    .danger-fill {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 0%;
+      background: linear-gradient(180deg, #ff4444, #ffcc00 50%, #2ecc71);
+      transition: height 0.05s linear;
+    }
+
+    #raise-btn {
+      width: 100%;
+      max-width: 360px;
+      padding: 22px 20px;
+      font-size: 1.55rem;
+      border-radius: 20px;
+      color: #fff;
+      background: linear-gradient(180deg, #ff5a67, var(--raise));
+      box-shadow: 0 8px 0 var(--raise-dark), 0 12px 28px rgba(0,0,0,0.4);
+      border: none;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      touch-action: none;
+    }
+    #raise-btn.held {
+      transform: translateY(6px);
+      box-shadow: 0 2px 0 var(--raise-dark), 0 4px 12px rgba(0,0,0,0.35);
+      background: linear-gradient(180deg, #ff3344, #c81e2c);
+    }
+    .hint {
+      margin-top: 10px;
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+
+    /* —— Game Over —— */
+    .go-face {
+      width: min(48vw, 180px);
+      height: min(48vw, 180px);
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: center 18%;
+      border: 4px solid #ff4444;
+      margin: 10px 0 14px;
+      box-shadow: 0 0 0 6px rgba(255,68,68,0.25);
+      animation: shakeFace 0.5s ease-in-out;
+    }
+    @keyframes shakeFace {
+      0%,100% { transform: rotate(0); }
+      25% { transform: rotate(-6deg); }
+      75% { transform: rotate(6deg); }
+    }
+    .go-title {
+      font-size: clamp(1.8rem, 8vw, 2.4rem);
+      color: #ff5555;
+      text-shadow: 2px 2px 0 #000;
+      margin-bottom: 6px;
+    }
+    .go-line {
+      font-size: 1.15rem;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .go-score {
+      font-size: 1.6rem;
+      color: var(--accent);
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+    .best {
+      font-size: 0.9rem;
+      opacity: 0.85;
+      margin-bottom: 18px;
+    }
+  </style>
+</head>
+<body>
+  <!-- START -->
+  <div id="start-screen" class="screen active">
+    <h1>Kevin Ly's <span>Hoist</span></h1>
+    <p class="tag">aka Ly Lift · garage edition</p>
+    <img class="kevin-hero" src="kevin.jpg" alt="Kevin Ly" />
+    <p class="blurb">
+      Hold <strong>RAISE</strong> to lift Kevin's white Tesla Model Y on the two-post hoist.
+      Try not to drop it. Spoiler: you will.
+    </p>
+    <button class="btn" id="start-btn" type="button">START LIFT</button>
+  </div>
+
+  <!-- PLAY -->
+  <div id="play-screen" class="screen">
+    <div id="hud">
+      <div class="stat">
+        <div class="label">Height</div>
+        <div class="value"><span id="height-val">0.0</span> ft</div>
+      </div>
+      <img class="kevin-chip" src="kevin.jpg" alt="Kevin" />
+      <div class="stat">
+        <div class="label">Best</div>
+        <div class="value"><span id="best-val">0.0</span> ft</div>
+      </div>
+    </div>
+
+    <div id="stage">
+      <div class="crossbeam"></div>
+      <div class="post left"></div>
+      <div class="post right"></div>
+      <div class="lift-arms" id="arms"></div>
+      <div id="car-wrap">
+        <img src="tesla-hoist.jpg" alt="Tesla Model Y on hoist" />
+      </div>
+      <div class="floor"></div>
+      <div class="danger-bar"><div class="danger-fill" id="danger-fill"></div></div>
+      <div id="boom">
+        <div class="smoke">💥💨</div>
+        <div class="wrecked">WRECKED</div>
+      </div>
+    </div>
+
+    <button id="raise-btn" type="button">⬆ HOLD TO RAISE</button>
+    <p class="hint">Hold button · Space · or tap &amp; hold · release to pause</p>
+  </div>
+
+  <!-- GAME OVER -->
+  <div id="over-screen" class="screen">
+    <p class="go-title">GAME OVER</p>
+    <img class="go-face" id="go-face" src="kevin-profile.jpg" alt="Kevin reaction" />
+    <p class="go-line" id="go-line">Kevin dropped the Y</p>
+    <p class="go-score">Reached <span id="final-height">0.0</span> ft</p>
+    <p class="best">Personal best: <span id="final-best">0.0</span> ft</p>
+    <button class="btn" id="again-btn" type="button">TRY AGAIN</button>
+  </div>
+
+  <script>
+(function () {
+  const startScreen = document.getElementById('start-screen');
+  const playScreen = document.getElementById('play-screen');
+  const overScreen = document.getElementById('over-screen');
+  const heightVal = document.getElementById('height-val');
+  const bestVal = document.getElementById('best-val');
+  const dangerFill = document.getElementById('danger-fill');
+  const carWrap = document.getElementById('car-wrap');
+  const arms = document.getElementById('arms');
+  const raiseBtn = document.getElementById('raise-btn');
+  const boom = document.getElementById('boom');
+  const goLine = document.getElementById('go-line');
+  const goFace = document.getElementById('go-face');
+  const finalHeight = document.getElementById('final-height');
+  const finalBest = document.getElementById('final-best');
+
+  const LINES = [
+    "Kevin dropped the Y",
+    "Insurance is gonna love this",
+    "Model Y → Model Why",
+    "Two posts, zero chill",
+    "Ly Lift… more like Ly Fall",
+    "Tesla: Autopilot? Nah. Autofall.",
+    "Kevin said 'trust the arms'",
+    "That's not how gravity works, Kev",
+    "Hoist? More like toast.",
+    "White Y, red face, yellow arms… oops",
+  ];
+
+  const MAX_VISUAL_FT = 14; // visual ceiling
+  const FLOOR_PCT = 24;     // car bottom % from stage bottom when at 0
+  const CEIL_PCT = 58;      // how high car can go visually (added to bottom)
+
+  let raising = false;
+  let height = 0;
+  let failAt = 6;
+  let best = parseFloat(localStorage.getItem('lyLiftBest') || '0') || 0;
+  let raf = null;
+  let lastTs = 0;
+  let crashed = false;
+  let audioCtx = null;
+
+  bestVal.textContent = best.toFixed(1);
+
+  function show(screen) {
+    [startScreen, playScreen, overScreen].forEach(s => s.classList.remove('active'));
+    screen.classList.add('active');
+  }
+
+  function ensureAudio() {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch (e) { audioCtx = null; }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function playCrash() {
+    if (!audioCtx) return;
+    const t0 = audioCtx.currentTime;
+    // thud
+    const o1 = audioCtx.createOscillator();
+    const g1 = audioCtx.createGain();
+    o1.type = 'sawtooth';
+    o1.frequency.setValueAtTime(90, t0);
+    o1.frequency.exponentialRampToValueAtTime(30, t0 + 0.35);
+    g1.gain.setValueAtTime(0.35, t0);
+    g1.gain.exponentialRampToValueAtTime(0.001, t0 + 0.4);
+    o1.connect(g1); g1.connect(audioCtx.destination);
+    o1.start(t0); o1.stop(t0 + 0.42);
+    // crash beep
+    const o2 = audioCtx.createOscillator();
+    const g2 = audioCtx.createGain();
+    o2.type = 'square';
+    o2.frequency.setValueAtTime(220, t0 + 0.05);
+    o2.frequency.exponentialRampToValueAtTime(60, t0 + 0.5);
+    g2.gain.setValueAtTime(0.12, t0 + 0.05);
+    g2.gain.exponentialRampToValueAtTime(0.001, t0 + 0.55);
+    o2.connect(g2); g2.connect(audioCtx.destination);
+    o2.start(t0 + 0.05); o2.stop(t0 + 0.56);
+    // noise-ish high tick via short high osc
+    const o3 = audioCtx.createOscillator();
+    const g3 = audioCtx.createGain();
+    o3.type = 'triangle';
+    o3.frequency.setValueAtTime(800, t0);
+    o3.frequency.exponentialRampToValueAtTime(120, t0 + 0.2);
+    g3.gain.setValueAtTime(0.08, t0);
+    g3.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
+    o3.connect(g3); g3.connect(audioCtx.destination);
+    o3.start(t0); o3.stop(t0 + 0.24);
+  }
+
+  function pickFailHeight() {
+    // Random fail between ~4.5 and ~12.5 ft, weighted a bit mid-high
+    const r = Math.random();
+    if (r < 0.25) return 4.5 + Math.random() * 2.2;      // early scare
+    if (r < 0.7) return 6.5 + Math.random() * 3.5;       // mid
+    return 10 + Math.random() * 2.8;                      // hero attempt
+  }
+
+  function setCarVisual() {
+    const t = Math.min(1, height / MAX_VISUAL_FT);
+    const bottom = FLOOR_PCT + t * CEIL_PCT;
+    carWrap.style.bottom = bottom + '%';
+    arms.style.bottom = (bottom - 2) + '%';
+    dangerFill.style.height = (t * 100) + '%';
+
+    carWrap.classList.remove('wobble-1', 'wobble-2', 'wobble-3');
+    if (crashed) return;
+    const prox = height / failAt;
+    if (prox > 0.88) carWrap.classList.add('wobble-3');
+    else if (prox > 0.65) carWrap.classList.add('wobble-2');
+    else if (prox > 0.4) carWrap.classList.add('wobble-1');
+  }
+
+  function startGame() {
+    ensureAudio();
+    height = 0;
+    failAt = pickFailHeight();
+    crashed = false;
+    raising = false;
+    boom.classList.remove('show');
+    carWrap.classList.remove('falling', 'wobble-1', 'wobble-2', 'wobble-3');
+    carWrap.style.transform = 'translateX(-50%) rotate(0deg)';
+    raiseBtn.classList.remove('held');
+    heightVal.textContent = '0.0';
+    setCarVisual();
+    show(playScreen);
+    lastTs = 0;
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(tick);
+  }
+
+  function tick(ts) {
+    if (crashed) return;
+    if (!lastTs) lastTs = ts;
+    const dt = Math.min(0.05, (ts - lastTs) / 1000);
+    lastTs = ts;
+
+    if (raising) {
+      // Speed ramps up slightly with height for tension
+      const speed = 1.55 + height * 0.08;
+      height += speed * dt;
+      heightVal.textContent = height.toFixed(1);
+
+      // Fail only while raising (fairer + funnier — release to "save")
+      if (height >= failAt) {
+        crash();
+        return;
+      }
+      setCarVisual();
+    }
+
+    raf = requestAnimationFrame(tick);
+  }
+
+  function crash() {
+    crashed = true;
+    raising = false;
+    raiseBtn.classList.remove('held');
+    carWrap.classList.remove('wobble-1', 'wobble-2', 'wobble-3');
+    carWrap.classList.add('falling');
+    // tip and drop
+    carWrap.style.transform = 'translateX(-42%) rotate(52deg)';
+    carWrap.style.bottom = '8%';
+    arms.style.bottom = (FLOOR_PCT + Math.min(1, height / MAX_VISUAL_FT) * CEIL_PCT - 2) + '%';
+    playCrash();
+    setTimeout(() => boom.classList.add('show'), 280);
+
+    if (height > best) {
+      best = height;
+      localStorage.setItem('lyLiftBest', String(best));
+      bestVal.textContent = best.toFixed(1);
+    }
+
+    setTimeout(() => {
+      goLine.textContent = LINES[Math.floor(Math.random() * LINES.length)];
+      // Alternate reaction face
+      goFace.src = Math.random() < 0.55 ? 'kevin-profile.jpg' : 'kevin.jpg';
+      finalHeight.textContent = height.toFixed(1);
+      finalBest.textContent = best.toFixed(1);
+      show(overScreen);
+    }, 1100);
+  }
+
+  function setRaising(on) {
+    if (crashed || !playScreen.classList.contains('active')) return;
+    raising = on;
+    raiseBtn.classList.toggle('held', on);
+    if (on) ensureAudio();
+  }
+
+  document.getElementById('start-btn').addEventListener('click', startGame);
+  document.getElementById('again-btn').addEventListener('click', startGame);
+
+  // Pointer (mouse + touch)
+  raiseBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    try { raiseBtn.setPointerCapture(e.pointerId); } catch (_) {}
+    setRaising(true);
+  });
+  raiseBtn.addEventListener('pointerup', () => setRaising(false));
+  raiseBtn.addEventListener('pointercancel', () => setRaising(false));
+  raiseBtn.addEventListener('pointerleave', (e) => {
+    if (e.buttons === 0) setRaising(false);
+  });
+  raiseBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  // Keyboard
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.key === ' ') {
+      e.preventDefault();
+      if (startScreen.classList.contains('active')) startGame();
+      else if (overScreen.classList.contains('active')) startGame();
+      else setRaising(true);
+    }
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space' || e.key === ' ') {
+      e.preventDefault();
+      setRaising(false);
+    }
+  });
+
+  // Prevent scroll bounce on mobile while playing
+  document.body.addEventListener('touchmove', (e) => {
+    if (playScreen.classList.contains('active')) e.preventDefault();
+  }, { passive: false });
+})();
+  </script>
+</body>
+</html>
